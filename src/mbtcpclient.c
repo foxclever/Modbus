@@ -43,7 +43,7 @@ uint16_t CreateAccessServerCommand(ObjAccessInfo objInfo,void *dataList,uint8_t 
 {
   uint16_t commandLength=0;
   /*生成读服务器对象的命令，功能码0x01、0x02、0x03、0x04,命令长度12个字节*/
-  if((objInfo.functionCode>=ReadCoilStatus)&&(objInfo.functionCode <= ReadInputStatus))
+  if((objInfo.functionCode>=ReadCoilStatus)&&(objInfo.functionCode <= ReadInputRegister))
   {
     commandLength=SyntheticReadWriteTCPServerCommand(objInfo,NULL,NULL,commandBytes);
     

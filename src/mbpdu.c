@@ -45,7 +45,7 @@ uint16_t GenerateReadWriteCommand(ObjAccessInfo objInfo,bool *statusList,uint16_
   commandBytes[index++]=objInfo.startingAddress;        //起始地址低字节
   
   /*读从站对象*/
-  if((objInfo.functionCode>=ReadCoilStatus)&&(objInfo.functionCode <= ReadInputStatus))
+  if((objInfo.functionCode>=ReadCoilStatus)&&(objInfo.functionCode <= ReadInputRegister))
   {
     commandBytes[index++]=objInfo.quantity>>8;
     commandBytes[index++]=objInfo.quantity;

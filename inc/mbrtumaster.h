@@ -25,6 +25,8 @@ uint16_t CreateAccessSlaveCommand(ObjAccessInfo objInfo,void *dataList,uint8_t *
 /*解析收到的服务器相应信息*/
 void ParsingSlaveRespondMessage(uint8_t *recievedMessage,uint8_t *command);
 
+/*接收到返回信息后，判断是否是发送命令列表中命令的返回信息*/
+int FindCommandForRecievedMessage(uint8_t *recievedMessage,uint8_t (*commandList)[8],uint16_t commandNumber);
 
 #endif
 /*********** (C) COPYRIGHT 1999-2016 Moonan Technology *********END OF FILE****/
