@@ -27,6 +27,74 @@ bool CovertSingleCommandCoilToBoolStatus(uint16_t coilValue,bool value)
   return state;
 }
 
+/*检验所写数据是否符合物理量要求范围并处理(单精度浮点数)*/
+float CheckWriteFloatDataIsValid(float value,float range,float zero)
+{
+  if(value>=range)
+  {
+    return range;
+  }
+  else if(value<=zero)
+  {
+    return zero;
+  }
+  else
+  {
+    return value;
+  }
+}
+
+/*检验所写数据是否符合物理量要求范围并处理(双精度浮点数)*/
+double CheckWriteDoubleDataIsValid(double value,double range,double zero)
+{
+  if(value>=range)
+  {
+    return range;
+  }
+  else if(value<=zero)
+  {
+    return zero;
+  }
+  else
+  {
+    return value;
+  }
+}
+
+/*检验所写数据是否符合物理量要求范围并处理(16位整数)*/
+uint16_t CheckWriteInt16DataIsValid(uint16_t value,uint16_t range,uint16_t zero)
+{
+  if(value>=range)
+  {
+    return range;
+  }
+  else if(value<=zero)
+  {
+    return zero;
+  }
+  else
+  {
+    return value;
+  }
+}
+
+/*检验所写数据是否符合物理量要求范围并处理(32位整数)*/
+uint32_t CheckWriteInt32DataIsValid(uint32_t value,uint32_t range,uint32_t zero)
+{
+  if(value>=range)
+  {
+    return range;
+  }
+  else if(value<=zero)
+  {
+    return zero;
+  }
+  else
+  {
+    return value;
+  }
+}
+
 /*获取想要读取的Coil量的值*/
 __weak void GetCoilStatus(uint16_t startAddress,uint16_t quantity,bool *statusList)
 {
@@ -76,25 +144,25 @@ __weak void SetMultipleRegister(uint16_t startAddress,uint16_t quantity,uint16_t
 }
 
 /*更新读回来的线圈状态*/
-__weak void UpdateCoilStatus(uint16_t startAddress,uint16_t quantity,bool *stateValue)
+__weak void UpdateCoilStatus(uint8_t salveAddress,uint16_t startAddress,uint16_t quantity,bool *stateValue)
 {
   //在客户端（主站）应用中实现
 }
 
 /*更新读回来的输入状态值*/
-__weak void UpdateInputStatus(uint16_t startAddress,uint16_t quantity,bool *stateValue)
+__weak void UpdateInputStatus(uint8_t salveAddress,uint16_t startAddress,uint16_t quantity,bool *stateValue)
 {
   //在客户端（主站）应用中实现
 }
 
 /*更新读回来的保持寄存器*/
-__weak void UpdateHoldingRegister(uint16_t startAddress,uint16_t quantity,uint16_t *registerValue)
+__weak void UpdateHoldingRegister(uint8_t salveAddress,uint16_t startAddress,uint16_t quantity,uint16_t *registerValue)
 {
   //在客户端（主站）应用中实现
 }
 
 /*更新读回来的输入寄存器*/
-__weak void UpdateInputResgister(uint16_t startAddress,uint16_t quantity,uint16_t *registerValue)
+__weak void UpdateInputResgister(uint8_t salveAddress,uint16_t startAddress,uint16_t quantity,uint16_t *registerValue)
 {
   //在客户端（主站）应用中实现
 }

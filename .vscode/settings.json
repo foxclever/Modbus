@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "mbascii.h": "c",
+        "mbasciislave.h": "c",
+        "mbrtuslave.h": "c"
+    },
+    "C_Cpp.intelliSenseEngineFallback": "Enabled",
+    "C_Cpp.errorSquiggles": "Disabled"
+}

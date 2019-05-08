@@ -12,12 +12,12 @@
 /*  +-----------+---------------+----------------------------+-------------+  */
 /*  |  地址域   |    功能码     | 数据域                     | CRC/LRC     |  */
 /*  +-----------+---------------+----------------------------+-------------+  */
-/*  对于ASCII编码则要在前面加上起始符“：”（0x3A）以及结束符“回车符”（0x0D）和 */
-/*  “换行符”（0x0A）                                                         **/
+/*  对于ASCII编码则要在前面加上起始符“：”（0x3A）                           */
+/*  以及结束符“回车符”（0x0D）和 “换行符”（0x0A）                        **/
 /**--------------------------------------------------------------------------**/
 /** 修改记录：                                                               **/
-/**     版本      日期              作者              说明                   **/
-/**     V1.0.0  2018-09-11          尹家军            创建文件               **/
+/**     版本      日期           作者         说明                           **/
+/**     V1.0.0  2018-09-11      尹家军     创建文件                          **/
 /**                                                                          **/
 /******************************************************************************/
 
@@ -35,7 +35,12 @@ static ModbusStatus CovertAsciiMsgToHexMsg(uint8_t *aMsg, uint8_t *hMsg, uint16_
 /*将16进制消息列转换为ASCII消息列*/
 static ModbusStatus CovertHexMsgToAsciiMsg(uint8_t *hMsg, uint8_t *aMsg, uint16_t hLen);
 
-/*生成读写从站的命令，应用于主站，含校验及起始结束符*/
+/* 生成读写从站的命令，应用于主站，含校验及起始结束符 */
+/* 参数slaveInfo，用于构建命令的访问从站信息 */
+/* 参数statusList，用于写从站线圈量时，线圈预置值列表 */
+/* 参数registerList，用于写 寄存器时，寄存器的预置值列表*/
+/* 参数commandBytes，生成的命令数组 */
+/* 返回值，所生成的命令的长度，以字节为单位 */
 uint16_t SyntheticReadWriteAsciiSlaveCommand(ObjAccessInfo slaveInfo, bool *statusList, uint16_t *registerList, uint8_t *commandBytes)
 {
     uint8_t command[256];
@@ -62,7 +67,12 @@ uint16_t SyntheticReadWriteAsciiSlaveCommand(ObjAccessInfo slaveInfo, bool *stat
     return index;
 }
 
-/*生成应答主站的响应，应用于从站*/
+/* 生成应答主站的响应，应用于从站 */
+/* 参数：uint8_t *receivedMessage,接收到的主站请求 */
+/* 参数：bool *statusList,主站请求的状态量的值列表 */
+/* 参数：uint16_t *registerList,主站请求的寄存器量的值列表 */
+/* 参数：uint8_t *respondBytes，客户端生成的响应主站的消息 */
+/* 返回值：生成的响应消息的长度 */
 uint16_t SyntheticAsciiSlaveAccessRespond(uint8_t *receivedMessage, bool *statusList, uint16_t *registerList, uint8_t *respondBytes)
 {
     uint16_t respondLength = 0;
@@ -107,7 +117,7 @@ static ModbusStatus CovertHexMsgToAsciiMsg(uint8_t *hMsg, uint8_t *aMsg, uint16_
 {
     if (hLen < 1)
     {
-        return OperationFail;
+        return SlaveFailure;
     }
 
     for (uint16_t i = 0; i < hLen; i++)
@@ -124,7 +134,7 @@ static ModbusStatus CovertAsciiMsgToHexMsg(uint8_t *aMsg, uint8_t *hMsg, uint16_
 {
     if ((aLen < 2) || (aLen % 2 != 0))
     {
-        return OperationFail;
+        return SlaveFailure;
     }
 
     uint8_t msb, lsb;
@@ -135,7 +145,7 @@ static ModbusStatus CovertAsciiMsgToHexMsg(uint8_t *aMsg, uint8_t *hMsg, uint16_
 
         if ((msb == 0xFF) || (lsb == 0xFF))
         {
-            return OperationFail;
+            return SlaveFailure;
         }
 
         hMsg[i / 2] = (msb << 4) + lsb;

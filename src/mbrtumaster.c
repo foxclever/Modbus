@@ -17,17 +17,17 @@
 #include "mbrtumaster.h"
 
 /*处理读从站状态量返回信息，读线圈状态位0x01功能码*/
-static void HandleReadCoilStatusRespond(uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
+static void HandleReadCoilStatusRespond(RTULocalMasterType *master,uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
 /*处理读从站状态量返回信息，读输入状态位0x02功能码*/
-static void HandleReadInputStatusRespond(uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
+static void HandleReadInputStatusRespond(RTULocalMasterType *master,uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
 /*处理读从站寄存器值的返回信息，读保持寄存器0x03功能码）*/
-static void HandleReadHoldingRegisterRespond(uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
+static void HandleReadHoldingRegisterRespond(RTULocalMasterType *master,uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
 /*处理读从站寄存器值的返回信息，读输入寄存器0x04功能码*/
-static void HandleReadInputRegisterRespond(uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
+static void HandleReadInputRegisterRespond(RTULocalMasterType *master,uint8_t *receivedMesasage,uint16_t startAddress,uint16_t quantity);
 /*判断接收到的信息是否是发送命令的返回信息*/
 static bool CheckMessageAgreeWithCommand(uint8_t *recievedMessage,uint8_t *command);
 
-void (*HandleSlaveRespond[])(uint8_t *,uint16_t,uint16_t)={HandleReadCoilStatusRespond,
+void (*HandleSlaveRespond[])(RTULocalMasterType *,uint8_t *,uint16_t,uint16_t)={HandleReadCoilStatusRespond,
                                                            HandleReadInputStatusRespond,
                                                            HandleReadHoldingRegisterRespond,
                                                            HandleReadInputRegisterRespond};
@@ -66,28 +66,80 @@ uint16_t CreateAccessSlaveCommand(ObjAccessInfo objInfo,void *dataList,uint8_t *
 /*解析收到的服务器相应信息*/
 /*uint8_t *recievedMessage,接收到的消息列表*/
 /*uint8_t *command,发送的读操作命令，若为NULL则在命令列表中查找*/
-void ParsingSlaveRespondMessage(uint8_t *recievedMessage,uint8_t *command)
+void ParsingSlaveRespondMessage(RTULocalMasterType *master,uint8_t *recievedMessage,uint8_t *command)
 {
+  int i=0;
+  int j=0;
+  uint16_t startAddress;
+  uint16_t quantity;
+  uint8_t *cmd=NULL;
+  
   /*如果不是读操作的反回信息不需要处理*/
   if(recievedMessage[1]>0x04)
   {
     return;
   }
-
-  if(command==NULL)
+  
+  /*判断功能码是否有误*/
+  FunctionCode fuctionCode=(FunctionCode)recievedMessage[1];
+  if (CheckFunctionCode(fuctionCode) != MB_OK)
   {
     return;
   }
   
-  FunctionCode fuctionCode=(FunctionCode)recievedMessage[1];
-  uint16_t startAddress=(uint16_t)command[2];
-  startAddress=(startAddress<<8)+(uint16_t)command[3];
-  uint16_t quantity=(uint16_t)command[4];
-  quantity=(quantity<<8)+(uint16_t)command[5];
+  /*校验接收到的信息是否有错*/
+  uint16_t byteCount=recievedMessage[2];
+  bool chechMessageNoError=CheckRTUMessageIntegrity(recievedMessage,byteCount+5);
+  if(!chechMessageNoError)
+  {
+    return;
+  }
+
+  if((command==NULL)||(!CheckMessageAgreeWithCommand(recievedMessage,command)))
+  {
+    while(i<master->slaveNumber)
+    {
+      if(master->pSlave[i].stationAddress==recievedMessage[0])
+      {
+        break;
+      }
+      i++;
+    }
+    
+    if(i>=master->slaveNumber)
+    {
+      return;
+    }
+    
+    if((master->pSlave[i].pLastCommand==NULL)||(!CheckMessageAgreeWithCommand(recievedMessage,master->pSlave[i].pLastCommand)))
+    {
+      j=FindCommandForRecievedMessage(recievedMessage,master->pSlave[i].pReadCommand,master->pSlave[i].commandNumber);
+      
+      if(j<0)
+      {
+        return;
+      }
+      
+      cmd=master->pSlave[i].pReadCommand[j];
+    }
+    else
+    {
+      cmd=master->pSlave[i].pLastCommand;
+    }
+  }
+  else
+  {
+    cmd=command;
+  }
+  
+  startAddress=(uint16_t)cmd[2];
+  startAddress=(startAddress<<8)+(uint16_t)cmd[3];
+  quantity=(uint16_t)cmd[4];
+  quantity=(quantity<<8)+(uint16_t)cmd[5];
   
   if((fuctionCode>=ReadCoilStatus)&&(fuctionCode<=ReadInputRegister))
   {
-    HandleSlaveRespond[fuctionCode-1](recievedMessage,startAddress,quantity);
+    HandleSlaveRespond[fuctionCode-1](master,recievedMessage,startAddress,quantity);
   }
 }
 
@@ -137,43 +189,135 @@ static bool CheckMessageAgreeWithCommand(uint8_t *recievedMessage,uint8_t *comma
   return aw;
 }
 /*处理读从站状态量返回信息，读线圈状态位0x012功能码*/
-static void HandleReadCoilStatusRespond(uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
+static void HandleReadCoilStatusRespond(RTULocalMasterType *master,uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
 {
   bool coilStatus[256];
   
   TransformClientReceivedData(receivedMessage,quantity,coilStatus,NULL);
   
-  UpdateCoilStatus(startAddress,quantity,coilStatus);
+  uint8_t slaveAddress=receivedMessage[0];
+  
+  master->pUpdateCoilStatus(slaveAddress,startAddress,quantity,coilStatus);
+
 }
 
 /*处理读从站状态量返回信息，读输入状态位0x02功能码*/
-static void HandleReadInputStatusRespond(uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
+static void HandleReadInputStatusRespond(RTULocalMasterType *master,uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
 {
   bool inputStatus[256];
   
   TransformClientReceivedData(receivedMessage,quantity,inputStatus,NULL);
   
-  UpdateInputStatus(startAddress,quantity,inputStatus);
+  uint8_t slaveAddress=receivedMessage[0];
+  
+  master->pUpdateInputStatus(slaveAddress,startAddress,quantity,inputStatus);
 }
 
 /*处理读从站寄存器值的返回信息，读保持寄存器0x03功能码）*/
-static void HandleReadHoldingRegisterRespond(uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
+static void HandleReadHoldingRegisterRespond(RTULocalMasterType *master,uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
 {
   uint16_t holdingRegister[125];
   
   TransformClientReceivedData(receivedMessage,quantity,NULL,holdingRegister);
   
-  UpdateHoldingRegister(startAddress,quantity,holdingRegister);
+  uint8_t slaveAddress=receivedMessage[0];
+  
+  master->pUpdateHoldingRegister(slaveAddress,startAddress,quantity,holdingRegister);
 }
 
 /*处理读从站寄存器值的返回信息，读输入寄存器0x04功能码*/
-static void HandleReadInputRegisterRespond(uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
+static void HandleReadInputRegisterRespond(RTULocalMasterType *master,uint8_t *receivedMessage,uint16_t startAddress,uint16_t quantity)
 {
   uint16_t inputRegister[125];
   
   TransformClientReceivedData(receivedMessage,quantity,NULL,inputRegister);
   
-  UpdateInputResgister(startAddress,quantity,inputRegister);
+  uint8_t slaveAddress=receivedMessage[0];
+  
+  master->pUpdateInputResgister(slaveAddress,startAddress,quantity,inputRegister);
+}
+
+/*初始化RTU主站对象*/
+void InitializeRTUMasterObject(RTULocalMasterType *master,uint16_t slaveNumber,
+                            RTUAccessedSlaveType *pSlave,
+                            UpdateCoilStatusType pUpdateCoilStatus,
+                            UpdateInputStatusType pUpdateInputStatus,
+                            UpdateHoldingRegisterType pUpdateHoldingRegister,
+                            UpdateInputResgisterType pUpdateInputResgister
+                            )
+{
+  master->slaveNumber=slaveNumber>255?255:slaveNumber;
+  
+  master->readOrder=0;
+  
+  master->pSlave=pSlave;
+  
+  for(int i=0;i<8;i++)
+  {
+    master->flagWriteSlave[i]=0x00000000;
+  }
+  
+  master->pUpdateCoilStatus=pUpdateCoilStatus!=NULL?pUpdateCoilStatus:UpdateCoilStatus;
+  
+
+  master->pUpdateInputStatus=pUpdateInputStatus!=NULL?pUpdateInputStatus:UpdateInputStatus;
+  
+  master->pUpdateHoldingRegister=(pUpdateHoldingRegister!=NULL)?pUpdateHoldingRegister:UpdateHoldingRegister;
+  
+  master->pUpdateInputResgister=(pUpdateInputResgister!=NULL)?pUpdateInputResgister:UpdateInputResgister;
+}
+
+/* 使能或者失能写从站操作标志位（修改从站的写使能标志位） */
+void ModifyWriteRTUSlaveEnableFlag(RTULocalMasterType *master,uint8_t slaveAddress,bool en)
+{
+  uint8_t row=0;
+  uint8_t column=0;
+
+  row=slaveAddress/32;
+  column=slaveAddress%32;
+  
+  if(en)
+  {
+    master->flagWriteSlave[row]|=(0x00000001<<column);
+  }
+  else
+  {
+    master->flagWriteSlave[row]&=(~(0x00000001<<column));
+  }
+}
+
+/* 获得从站的写使能标志位的状态 */
+bool GetWriteRTUSlaveEnableFlag(RTULocalMasterType *master,uint8_t slaveAddress)
+{
+  bool status=false;
+  uint8_t row=0;
+  uint8_t column=0;
+
+  row=slaveAddress/32;
+  column=slaveAddress%32;
+  
+  if((master->flagWriteSlave[row]&(0x00000001<<column))==(0x00000001<<column))
+  {
+    status=true;
+  }
+  
+  return status;
+}
+
+/* 判断当前是否有写操作使能 */
+bool CheckWriteRTUSlaveNone(RTULocalMasterType *master)
+{
+  bool status=true;
+  
+  for(int i=0;i<8;i++)
+  {
+    if(master->flagWriteSlave[i]>0x00000000)
+    {
+      status=false;
+    }
+  }
+  
+  return status;
 }
 
 /*********** (C) COPYRIGHT 1999-2016 Moonan Technology *********END OF FILE****/

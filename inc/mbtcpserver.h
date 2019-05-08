@@ -16,7 +16,6 @@
 #define __mbtcpserver_h
 
 #include "mbtcp.h"
-#include "dataobject.h"
 #include "mbcommon.h"
 
 

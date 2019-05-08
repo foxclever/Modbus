@@ -1,0 +1,7 @@
+{
+    "version": 1,
+    "path": "C:\\Program Files\\IAR Systems\\Embedded Workbench 8.0\\",
+    "project": "D:\\ZeroProjects\\BetaAction\\PModbus\\EWARM\\mbplus.ewp",
+    "config": "Debug",
+    "parallel" : true
+}

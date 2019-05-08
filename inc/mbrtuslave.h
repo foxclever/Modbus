@@ -14,7 +14,6 @@
 #define __mbrtuslave_h
 
 #include "mbrtu.h"
-#include "dataobject.h"
 #include "mbcommon.h"
 
 

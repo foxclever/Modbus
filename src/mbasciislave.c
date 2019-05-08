@@ -63,6 +63,7 @@ uint16_t ParsingAsciiMasterAccessCommand(uint8_t *receivedMessage, uint8_t *resp
         return 0;
     }
 
+    /*校验接收到的数据是否正确*/
     if (!CheckASCIIMessageIntegrity(hexMessage, length))
     {
         return 0;
