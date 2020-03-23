@@ -81,7 +81,7 @@ uint16_t SyntheticServerAccessRespond(uint8_t *receivedMessage,bool *statusList,
   respondBytes[index++]=*(receivedMessage+2);
   respondBytes[index++]=*(receivedMessage+3);
   uint8_t respond[260];
-  uint16_t bytesCount=GenerateMasterAccessRespond(receivedMessage+6,statusList,registerList,respondBytes);
+  uint16_t bytesCount=GenerateMasterAccessRespond(receivedMessage+6,statusList,registerList,respond);
   respondBytes[index++]=(bytesCount>>8);
   respondBytes[index++]=bytesCount;
   
