@@ -28,3 +28,4 @@ Modbus协议是一种主从（或者说客户端/服务器）模式协议，由�
 - CSDN：https://blog.csdn.net/foxclever
 - 博客园：https://www.cnblogs.com/foxclever/
 - 同时欢迎关注我们的微信公众号：“木南创智”
+!.[公众号].(https://github.com/foxclever/ExPeriphDriver/blob/master/pic/gzh.png)
