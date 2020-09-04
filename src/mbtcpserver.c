@@ -8,7 +8,7 @@
 /**--------------------------------------------------------------------------**/
 /** 修改记录：                                                               **/
 /**     版本      日期              作者              说明                   **/
-/**     V1.0.0  2016-04-17          尹家军            创建文件               **/
+/**     V1.0.0  2016-04-17          木南              创建文件               **/
 /**                                                                          **/
 /******************************************************************************/ 
 
@@ -32,13 +32,13 @@ static uint16_t HandleWriteMultipleCoilCommand(uint16_t startAddress,uint16_t qu
 static uint16_t HandleWriteMultipleRegisterCommand(uint16_t startAddress,uint16_t quantity,uint8_t *receivedMessage,uint8_t *respondBytes);
 
 uint16_t (*HandleClientCommand[])(uint16_t,uint16_t,uint8_t *,uint8_t *)={HandleReadCoilStatusCommand,
-                                                                          HandleReadInputStatusCommand,
-                                                                          HandleReadHoldingRegisterCommand,
-                                                                          HandleReadInputRegisterCommand,
-                                                                          HandleWriteSingleCoilCommand,
-                                                                          HandleWriteSingleRegisterCommand,
-                                                                          HandleWriteMultipleCoilCommand,
-                                                                          HandleWriteMultipleRegisterCommand};
+HandleReadInputStatusCommand,
+HandleReadHoldingRegisterCommand,
+HandleReadInputRegisterCommand,
+HandleWriteSingleCoilCommand,
+HandleWriteSingleRegisterCommand,
+HandleWriteMultipleCoilCommand,
+HandleWriteMultipleRegisterCommand};
 
 /*解析接收到的信息，返回响应命令的长度*/
 uint16_t ParsingClientAccessCommand(uint8_t *receivedMessage,uint8_t *respondBytes)
@@ -58,7 +58,7 @@ uint16_t ParsingClientAccessCommand(uint8_t *receivedMessage,uint8_t *respondByt
   uint8_t index=(fc>0x08)?(fc-0x09):(fc-0x01);
   
   length=HandleClientCommand[index](startAddress,quantity,receivedMessage,respondBytes);
-
+  
   return length;
 }
 
@@ -71,7 +71,7 @@ static uint16_t HandleReadCoilStatusCommand(uint16_t startAddress,uint16_t quant
   GetCoilStatus(startAddress,quantity,statusList);
   
   length=SyntheticServerAccessRespond(receivedMessage,statusList,NULL,respondBytes);
-    
+  
   return length;
 }
 
@@ -122,7 +122,7 @@ static uint16_t HandleWriteSingleCoilCommand(uint16_t coilAddress,uint16_t coilV
 {
   uint16_t length=0;
   bool value;
-
+  
   length=SyntheticServerAccessRespond(receivedMessage,NULL,NULL,respondBytes);
   
   GetCoilStatus(coilAddress,1,&value);
@@ -137,7 +137,7 @@ static uint16_t HandleWriteSingleCoilCommand(uint16_t coilAddress,uint16_t coilV
 static uint16_t HandleWriteSingleRegisterCommand(uint16_t registerAddress,uint16_t registerValue,uint8_t *receivedMessage,uint8_t *respondBytes)
 {
   uint16_t length=0;
-
+  
   length=SyntheticServerAccessRespond(receivedMessage,NULL,NULL,respondBytes);
   
   SetSingleRegister(registerAddress,registerValue);
@@ -154,7 +154,7 @@ static uint16_t HandleWriteMultipleCoilCommand(uint16_t startAddress,uint16_t qu
   length=SyntheticServerAccessRespond(receivedMessage,statusValue,NULL,respondBytes);
   
   SetMultipleCoil(startAddress,quantity,statusValue);
-
+  
   return length;
 }
 
@@ -163,7 +163,7 @@ static uint16_t HandleWriteMultipleRegisterCommand(uint16_t startAddress,uint16_
 {
   uint16_t length=0;
   uint16_t registerValue[125];
-
+  
   length=SyntheticServerAccessRespond(receivedMessage,NULL,registerValue,respondBytes);
   
   SetMultipleRegister(startAddress,quantity,registerValue);

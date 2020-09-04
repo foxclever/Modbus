@@ -20,7 +20,7 @@
 /**--------------------------------------------------------------------------**/
 /** 修改记录：                                                               **/
 /**     版本      日期              作者              说明                   **/
-/**     V1.0.0  2015-06-17          尹家军            创建文件               **/
+/**     V1.0.0  2015-06-17          木南              创建文件               **/
 /**                                                                          **/
 /******************************************************************************/ 
 
@@ -100,7 +100,7 @@ void TransformClientReceivedData(uint8_t * receivedMessage,uint16_t quantity,boo
 {
   FunctionCode fc=(FunctionCode)receivedMessage[1];
   uint16_t bytesCount=(uint16_t)receivedMessage[2];
-
+  
   /*转化线圈状态和输入状态数据*/
   if(((fc==ReadInputStatus)||(fc==ReadCoilStatus))&&(statusList!=NULL))
   {
@@ -157,7 +157,7 @@ uint16_t GenerateMasterAccessRespond(uint8_t *receivedMessage,bool *statusList,u
       respondBytes[index++]=byteArray[i];	//所写的位的字节
     }
   }
-
+  
   /*读寄存器数据*/
   if(((functionCode==ReadHoldingRegister)||(functionCode==ReadInputRegister))&&(registerList!=NULL))
   {
@@ -192,7 +192,7 @@ uint16_t GenerateMasterAccessRespond(uint8_t *receivedMessage,bool *statusList,u
       ConvertMBByteArrayToRegisterArray(receivedMessage,registerList);
     }
   }
-
+  
   return index;
 }
 
@@ -203,7 +203,7 @@ static uint16_t ConvertBoolArrayToMBByteArray(bool *sData,uint16_t length,uint8_
   if(length>0)
   {
     returnLength=(length-1)/8+1;
-
+    
     for(int i=0;i<returnLength;i++)
     {
       for(int j=0;j<8;j++)

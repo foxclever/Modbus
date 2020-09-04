@@ -9,8 +9,8 @@
 /**--------------------------------------------------------------------------**/
 /** 修改记录：                                                               **/
 /**     版本      日期              作者              说明                   **/
-/**     V1.0.0  2016-04-17          尹家军            创建文件               **/
-/**     V1.5.0  2018-01-16          尹家军            修改指令存储及检索     **/
+/**     V1.0.0  2016-04-17          木南              创建文件               **/
+/**     V1.5.0  2018-01-16          木南              修改指令存储及检索     **/
 /**                                                                          **/
 /******************************************************************************/
 
@@ -28,9 +28,9 @@ static void HandleReadInputRegisterRespond(RTULocalMasterType *master,uint8_t *r
 static bool CheckMessageAgreeWithCommand(uint8_t *recievedMessage,uint8_t *command);
 
 void (*HandleSlaveRespond[])(RTULocalMasterType *,uint8_t *,uint16_t,uint16_t)={HandleReadCoilStatusRespond,
-                                                           HandleReadInputStatusRespond,
-                                                           HandleReadHoldingRegisterRespond,
-                                                           HandleReadInputRegisterRespond};
+HandleReadInputStatusRespond,
+HandleReadHoldingRegisterRespond,
+HandleReadInputRegisterRespond};
 
 /*函数名：CreateAccessSlaveCommand，生成访问服务器的命令*/
 /*参数：ObjAccessInfo objInfo,要生成访问命令的对象信息*/
@@ -45,7 +45,7 @@ uint16_t CreateAccessSlaveCommand(ObjAccessInfo objInfo,void *dataList,uint8_t *
   {
     commandLength=SyntheticReadWriteSlaveCommand(objInfo,NULL,NULL,commandBytes);
   }
-
+  
   /*生成预置服务器对象的命令，功能码0x05,0x0F,命令长度随发送数据而变*/
   if((objInfo.functionCode==WriteSingleCoil)||(objInfo.functionCode==WriteMultipleCoil))
   {
@@ -59,7 +59,7 @@ uint16_t CreateAccessSlaveCommand(ObjAccessInfo objInfo,void *dataList,uint8_t *
     uint16_t *registerList=(uint16_t*)dataList;
     commandLength=SyntheticReadWriteSlaveCommand(objInfo,NULL,registerList,commandBytes);
   }
-
+  
   return commandLength;
 }
 
@@ -94,7 +94,7 @@ void ParsingSlaveRespondMessage(RTULocalMasterType *master,uint8_t *recievedMess
   {
     return;
   }
-
+  
   if((command==NULL)||(!CheckMessageAgreeWithCommand(recievedMessage,command)))
   {
     while(i<master->slaveNumber)
@@ -149,17 +149,17 @@ int FindCommandForRecievedMessage(uint8_t *recievedMessage,uint8_t (*commandList
 {
   int cmdIndex=-1;
   
-    for(int i=0;i<commandNumber;i++)
+  for(int i=0;i<commandNumber;i++)
+  {
+    if(CheckMessageAgreeWithCommand(recievedMessage,commandList[i])==true)
     {
-      if(CheckMessageAgreeWithCommand(recievedMessage,commandList[i])==true)
-      {
-        cmdIndex=i;
-        break;
-      }
+      cmdIndex=i;
+      break;
     }
+  }
   return cmdIndex;
 }
-        
+
 /*判断接收到的信息是否是发送命令的返回信息*/
 static bool CheckMessageAgreeWithCommand(uint8_t *recievedMessage,uint8_t *command)
 {
@@ -198,7 +198,7 @@ static void HandleReadCoilStatusRespond(RTULocalMasterType *master,uint8_t *rece
   uint8_t slaveAddress=receivedMessage[0];
   
   master->pUpdateCoilStatus(slaveAddress,startAddress,quantity,coilStatus);
-
+  
 }
 
 /*处理读从站状态量返回信息，读输入状态位0x02功能码*/
@@ -239,12 +239,12 @@ static void HandleReadInputRegisterRespond(RTULocalMasterType *master,uint8_t *r
 
 /*初始化RTU主站对象*/
 void InitializeRTUMasterObject(RTULocalMasterType *master,uint16_t slaveNumber,
-                            RTUAccessedSlaveType *pSlave,
-                            UpdateCoilStatusType pUpdateCoilStatus,
-                            UpdateInputStatusType pUpdateInputStatus,
-                            UpdateHoldingRegisterType pUpdateHoldingRegister,
-                            UpdateInputResgisterType pUpdateInputResgister
-                            )
+                               RTUAccessedSlaveType *pSlave,
+                               UpdateCoilStatusType pUpdateCoilStatus,
+                               UpdateInputStatusType pUpdateInputStatus,
+                               UpdateHoldingRegisterType pUpdateHoldingRegister,
+                               UpdateInputResgisterType pUpdateInputResgister
+                                 )
 {
   master->slaveNumber=slaveNumber>255?255:slaveNumber;
   
@@ -257,10 +257,10 @@ void InitializeRTUMasterObject(RTULocalMasterType *master,uint16_t slaveNumber,
     master->flagWriteSlave[i]=0x00000000;
   }
   
-  master->pUpdateCoilStatus=pUpdateCoilStatus!=NULL?pUpdateCoilStatus:UpdateCoilStatus;
+  master->pUpdateCoilStatus=(pUpdateCoilStatus!=NULL)?pUpdateCoilStatus:UpdateCoilStatus;
   
-
-  master->pUpdateInputStatus=pUpdateInputStatus!=NULL?pUpdateInputStatus:UpdateInputStatus;
+  
+  master->pUpdateInputStatus=(pUpdateInputStatus!=NULL)?pUpdateInputStatus:UpdateInputStatus;
   
   master->pUpdateHoldingRegister=(pUpdateHoldingRegister!=NULL)?pUpdateHoldingRegister:UpdateHoldingRegister;
   
@@ -272,7 +272,7 @@ void ModifyWriteRTUSlaveEnableFlag(RTULocalMasterType *master,uint8_t slaveAddre
 {
   uint8_t row=0;
   uint8_t column=0;
-
+  
   row=slaveAddress/32;
   column=slaveAddress%32;
   
@@ -292,7 +292,7 @@ bool GetWriteRTUSlaveEnableFlag(RTULocalMasterType *master,uint8_t slaveAddress)
   bool status=false;
   uint8_t row=0;
   uint8_t column=0;
-
+  
   row=slaveAddress/32;
   column=slaveAddress%32;
   
