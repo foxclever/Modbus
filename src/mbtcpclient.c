@@ -68,6 +68,8 @@ uint16_t CreateAccessServerCommand(TCPLocalClientType *client,ObjAccessInfo objI
 /*解析收到的服务器相应信息*/
 void ParsingServerRespondMessage(TCPLocalClientType *client,uint8_t *recievedMessage)
 {
+  TCPAccessedServerType *currentServer=client->pCurrentServer;
+  
   /*判断接收到的信息是否有相应的命令*/
   int cmdIndex=FindCommandForRecievedMessage(client,recievedMessage);
   
@@ -95,15 +97,15 @@ void ParsingServerRespondMessage(TCPLocalClientType *client,uint8_t *recievedMes
   
   FunctionCode fuctionCode=(FunctionCode)recievedMessage[7];
   
-  if(fuctionCode!=client->pReadCommand[cmdIndex][7])
+  if(fuctionCode!=currentServer->pReadCommand[cmdIndex][7])
   {
     return;
   }
   
-  uint16_t startAddress=(uint16_t)client->pReadCommand[cmdIndex][8];
-  startAddress=(startAddress<<8)+(uint16_t)client->pReadCommand[cmdIndex][9];
-  uint16_t quantity=(uint16_t)client->pReadCommand[cmdIndex][10];
-  quantity=(quantity<<8)+(uint16_t)client->pReadCommand[cmdIndex][11];
+  uint16_t startAddress=(uint16_t)currentServer->pReadCommand[cmdIndex][8];
+  startAddress=(startAddress<<8)+(uint16_t)currentServer->pReadCommand[cmdIndex][9];
+  uint16_t quantity=(uint16_t)currentServer->pReadCommand[cmdIndex][10];
+  quantity=(quantity<<8)+(uint16_t)currentServer->pReadCommand[cmdIndex][11];
   
   if(quantity*2!=dLength)       //请求的数据长度与返回的数据长度不一致
   {
@@ -119,17 +121,19 @@ void ParsingServerRespondMessage(TCPLocalClientType *client,uint8_t *recievedMes
 /*发送命令后，向已发送命令列表中添加命令*/
 void AddCommandBytesToList(TCPLocalClientType *client,uint8_t *commandBytes)
 {
-  if(client->cmdOrder>=client->cmdNumber)
+  TCPAccessedServerType *currentServer=client->pCurrentServer;
+
+  if(currentServer->cmdOrder>=currentServer->cmdNumber)
   {
-    client->cmdOrder=0;
+    currentServer->cmdOrder=0;
   }
   
   for(int i=0;i<12;i++)
   {
-    client->pReadCommand[client->cmdOrder][i]=commandBytes[i];
+    currentServer->pReadCommand[currentServer->cmdOrder][i]=commandBytes[i];
   }
   
-  client->cmdOrder++;
+  currentServer->cmdOrder++;
 }
 
 /*接收到返回信息后，判断是否是发送命令列表中命令的返回信息，*/
@@ -137,9 +141,11 @@ void AddCommandBytesToList(TCPLocalClientType *client,uint8_t *commandBytes)
 static int FindCommandForRecievedMessage(TCPLocalClientType *client,uint8_t *recievedMessage)
 {
   int cmdIndex=-1;
-  for(int i=0;i<client->cmdNumber;i++)
+  TCPAccessedServerType *currentServer=client->pCurrentServer;
+  
+  for(int i=0;i<currentServer->cmdNumber;i++)
   {
-    if((recievedMessage[0]==client->pReadCommand[i][0])&&(recievedMessage[1]==client->pReadCommand[i][1]))
+    if((recievedMessage[0]==currentServer->pReadCommand[i][0])&&(recievedMessage[1]==currentServer->pReadCommand[i][1]))
     {
       cmdIndex=i;
       break;
@@ -156,7 +162,9 @@ static void HandleReadCoilStatusRespond(TCPLocalClientType *client,uint8_t *rece
   
   TransformClientReceivedData(receivedMessage+6,quantity,coilStatus,NULL);
   
-  client->pUpdateCoilStatus(1,startAddress,quantity,coilStatus);
+  uint8_t serverAddress=client->pCurrentServer->ipAddress.ipSegment[3];
+  
+  client->pUpdateCoilStatus(serverAddress,startAddress,quantity,coilStatus);
 }
 
 /*处理读服务器状态量返回信息，读输入状态位0x02功能码*/
@@ -166,7 +174,9 @@ static void HandleReadInputStatusRespond(TCPLocalClientType *client,uint8_t *rec
   
   TransformClientReceivedData(receivedMessage+6,quantity,inputStatus,NULL);
   
-  client->pUpdateInputStatus(1,startAddress,quantity,inputStatus);
+  uint8_t serverAddress=client->pCurrentServer->ipAddress.ipSegment[3];
+  
+  client->pUpdateInputStatus(serverAddress,startAddress,quantity,inputStatus);
 }
 
 /*处理读服务器寄存器值的返回信息，读保持寄存器0x03功能码）*/
@@ -176,7 +186,9 @@ static void HandleReadHoldingRegisterRespond(TCPLocalClientType *client,uint8_t 
   
   TransformClientReceivedData(receivedMessage+6,quantity,NULL,holdingRegister);
   
-  client->pUpdateHoldingRegister(1,startAddress,quantity,holdingRegister);
+  uint8_t serverAddress=client->pCurrentServer->ipAddress.ipSegment[3];
+  
+  client->pUpdateHoldingRegister(serverAddress,startAddress,quantity,holdingRegister);
 }
 
 /*处理读服务器寄存器值的返回信息，读输入寄存器0x04功能码*/
@@ -186,7 +198,9 @@ static void HandleReadInputRegisterRespond(TCPLocalClientType *client,uint8_t *r
   
   TransformClientReceivedData(receivedMessage+6,quantity,NULL,inputRegister);
   
-  client->pUpdateInputResgister(1,startAddress,quantity,inputRegister);
+  uint8_t serverAddress=client->pCurrentServer->ipAddress.ipSegment[3];
+  
+  client->pUpdateInputResgister(serverAddress,startAddress,quantity,inputRegister);
 }
 
 /*生成MBAP头数据,为了方便与RTU相同处理，将单元标识符（远程从站地址）放在生成命令时处理*/
@@ -215,8 +229,6 @@ static uint16_t CreateMbapHeadPart(TCPLocalClientType *client,uint8_t * mbapHead
 
 /*初始化TCP客户端对象*/
 void InitializeTCPClientObject(TCPLocalClientType *client,
-                               uint16_t cmdNumber,
-                               uint8_t (*pReadCommand)[12],
                                UpdateCoilStatusType pUpdateCoilStatus,
                                UpdateInputStatusType pUpdateInputStatus,
                                UpdateHoldingRegisterType pUpdateHoldingRegister,
@@ -224,15 +236,9 @@ void InitializeTCPClientObject(TCPLocalClientType *client,
                                  )
 {
   client->transaction=0;
-  
-  client->cmdNumber=cmdNumber;
-  
-  client->cmdOrder=0;
-  
-  client->pReadCommand=pReadCommand;
-  
-  client->ServerHeadNode.pServerNode=NULL;
-  client->ServerHeadNode.serverNumber=0;
+
+  client->pServerList=NULL;
+  client->pCurrentServer=NULL;
   
   client->pUpdateCoilStatus=pUpdateCoilStatus!=NULL?pUpdateCoilStatus:UpdateCoilStatus;
   
@@ -244,23 +250,42 @@ void InitializeTCPClientObject(TCPLocalClientType *client,
 }
 
 /* 实例化TCP服务器对象 */
-void InstantiateTCPServerObject(TCPAccessedServerType *server,
-                                TCPLocalClientType *client,
-                                uint8_t ipSegment1,uint8_t ipSegment2,
-                                uint8_t ipSegment3,uint8_t ipSegment4)
+void InstantiateTCPServerObject(TCPAccessedServerType *server,          //要实例化的服务器对象
+                                TCPLocalClientType *client,             //服务器所属本地客户端对象
+                                uint8_t ipSegment1,                     //IP地址第1段
+                                uint8_t ipSegment2,                     //IP地址第2段
+                                uint8_t ipSegment3,                     //IP地址第3段
+                                uint8_t ipSegment4,                     //IP地址第4段
+                                uint16_t port,                          //端口，默认为502
+                                uint16_t cmdNumber,                     //读命令的数量，最多127
+                                uint8_t(*pReadCommand)[12],             //读命令列表
+                                uint16_t writedCoilNumber,              //可写线圈量节点的数量
+                                WritedCoilListNode *pCoilList,          //写线圈列表
+                                uint16_t writedRegisterNumber,          //可写寄存器量节点的数量
+                                WritedRegisterListNode *pRegisterList)  //写寄存器列表
 {
+    if ((server == NULL) || (client == NULL))
+    {
+        return;
+    }
+
   server->ipAddress.ipSegment[0]=ipSegment1;
   server->ipAddress.ipSegment[1]=ipSegment2;
   server->ipAddress.ipSegment[2]=ipSegment3;
   server->ipAddress.ipSegment[3]=ipSegment4;
   
+  server->port = port > 0 ? port : 502;
+
   server->flagPresetServer=0;
+  server->cmdNumber = cmdNumber;
+  server->cmdOrder = 0;
+  server->pReadCommand = pReadCommand;
   
-  server->pWritedCoilHeadNode.writedCoilNumber=0;
-  server->pWritedCoilHeadNode.pWritedCoilNode=NULL;
+  server->writedCoilNumber=writedCoilNumber;
+  server->pWritedCoilList=pCoilList;
   
-  server->pWritedRegisterHeadNode.writedRegisterNumber=0;
-  server->pWritedRegisterHeadNode.pWritedRegisterNode=NULL;
+  server->writedRegisterNumber=writedRegisterNumber;
+  server->pWritedRegisterList=pRegisterList;
   
   server->pNextNode=NULL;
   
@@ -277,23 +302,23 @@ static void AddTCPServerNode(TCPLocalClientType *client,TCPAccessedServerType *s
   {
     return;
   }
-  
-  currentNode=client->ServerHeadNode.pServerNode;
+
+  currentNode=client->pServerList;
   
   if(currentNode==NULL)
   {
-    client->ServerHeadNode.pServerNode=server;
+    client->pServerList=server;
   }
   else if(server->ipAddress.ipSegment[3]<currentNode->ipAddress.ipSegment[3])
   {
-    client->ServerHeadNode.pServerNode=server;
+    client->pServerList=server;
     server->pNextNode=currentNode;
   }
   else
   {
     while(currentNode->pNextNode!=NULL)
     {
-      if((currentNode->ipAddress.ipSegment[3]<=server->ipAddress.ipSegment[3])||(server->ipAddress.ipSegment[3]<currentNode->pNextNode->ipAddress.ipSegment[3]))
+      if((currentNode->ipAddress.ipSegment[3]<=server->ipAddress.ipSegment[3])&&(server->ipAddress.ipSegment[3]<currentNode->pNextNode->ipAddress.ipSegment[3]))
       {
         server->pNextNode=currentNode->pNextNode;
         currentNode->pNextNode=server;
@@ -310,14 +335,13 @@ static void AddTCPServerNode(TCPLocalClientType *client,TCPAccessedServerType *s
       currentNode->pNextNode=server;
     }
   }
-  client->ServerHeadNode.serverNumber++;
 }
 
 /* 使能或者失能写服务器操作标志位（修改服务器的写使能标志位） */
 void ModifyWriteTCPServerEnableFlag(TCPLocalClientType *client,uint8_t ipAddress,bool en)
 {
   TCPAccessedServerType *currentNode;
-  currentNode=client->ServerHeadNode.pServerNode;
+  currentNode=client->pServerList;
   
   while(currentNode!=NULL)
   {
@@ -342,7 +366,7 @@ bool GetWriteTCPServerEnableFlag(TCPLocalClientType *client,uint8_t ipAddress)
   bool status=false;
   
   TCPAccessedServerType *currentNode;
-  currentNode=client->ServerHeadNode.pServerNode;
+  currentNode=client->pServerList;
   
   while(currentNode!=NULL)
   {
@@ -363,7 +387,7 @@ bool CheckWriteTCPServerNone(TCPLocalClientType *client)
   bool status=true;
   
   TCPAccessedServerType *currentNode;
-  currentNode=client->ServerHeadNode.pServerNode;
+  currentNode=client->pServerList;
   
   while(currentNode!=NULL)
   {

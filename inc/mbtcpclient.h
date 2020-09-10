@@ -38,35 +38,29 @@ typedef struct WritedRegisterListType{
 
 /* 定义被访问TCP服务器对象类型 */
 typedef struct AccessedTCPServerType{
-  uint32_t flagPresetServer;                          //写服务器请求标志
   union {
     uint32_t ipNumber;
     uint8_t ipSegment[4];
-  }ipAddress;                                          //服务器的IP地址
-  
-  struct WritedCoilListHeadType{
-    WritedCoilListNode *pWritedCoilNode;        //可写线圈量节点指针
-    uint32_t writedCoilNumber;                  //可写线圈量节点的数量
-  }pWritedCoilHeadNode;                         //可写的线圈量列表
-  
-  struct WritedRegisterListHeadType{
-    WritedRegisterListNode *pWritedRegisterNode;  //可写寄存器量节点指针
-    uint32_t writedRegisterNumber;              //可写寄存器量节点的数量
-  }pWritedRegisterHeadNode;                     //可写的保持寄存器列表
-  
+  }ipAddress;                           //服务器的IP地址
+  uint16_t port;                        //写服务器请求标志
+
+  uint16_t flagPresetServer:2;          //写服务器请求标志
+  uint16_t cmdNumber:7;                 //读服务器命令的数量
+  uint16_t cmdOrder:7;                  //当前命令在命令列表中的位置
+  uint8_t (*pReadCommand)[12];          //读命令列表，存储读操作命令
+
+  uint16_t writedCoilNumber;                  //可写线圈量节点的数量
+  uint16_t writedRegisterNumber;              //可写寄存器量节点的数量
+  WritedCoilListNode *pWritedCoilList;        //可写线圈量节点指针  
+  WritedRegisterListNode *pWritedRegisterList;  //可写寄存器量节点指针
   struct AccessedTCPServerType *pNextNode;      //下一个TCP服务器节点
 }TCPAccessedServerType;
 
 /* 定义本地TCP客户端对象类型 */
 typedef struct LocalTCPClientType{
-  uint16_t transaction;                                 //事务标识符
-  uint16_t cmdNumber;                                  //读服务器命令的数量
-  uint16_t cmdOrder;                                   //当前命令在命令列表中的位置
-  uint8_t (*pReadCommand)[12];                         //读命令列表，存储读操作命令
-  struct ServerListHeadType {
-    TCPAccessedServerType *pServerNode;                 //服务器节点指针
-    uint32_t serverNumber;                              //服务器的数量
-  }ServerHeadNode;                                      //Server对象链表的头节点
+  uint16_t transaction;                         //事务标识符
+  TCPAccessedServerType *pServerList;           //服务器节点列表
+  TCPAccessedServerType *pCurrentServer;        //当前连接的服务器节点
   UpdateCoilStatusType pUpdateCoilStatus;               //更新线圈量函数
   UpdateInputStatusType pUpdateInputStatus;             //更新输入状态量函数
   UpdateHoldingRegisterType pUpdateHoldingRegister;     //更新保持寄存器量函数
@@ -92,17 +86,24 @@ bool GetWriteTCPServerEnableFlag(TCPLocalClientType *client,uint8_t ipAddress);
 bool CheckWriteTCPServerNone(TCPLocalClientType *client);
 
 /* 实例化TCP服务器对象 */
-void InstantiateTCPServerObject(TCPAccessedServerType *server,
-                                TCPLocalClientType *client,
-                                uint8_t ipSegment1,uint8_t ipSegment2,
-                                uint8_t ipSegment3,uint8_t ipSegment4);
+void InstantiateTCPServerObject(TCPAccessedServerType *server,          //要实例化的服务器对象
+                                TCPLocalClientType *client,             //服务器所属本地客户端对象
+                                uint8_t ipSegment1,                     //IP地址第1段
+                                uint8_t ipSegment2,                     //IP地址第2段
+                                uint8_t ipSegment3,                     //IP地址第3段
+                                uint8_t ipSegment4,                     //IP地址第4段
+                                uint16_t port,                          //端口，默认为502
+                                uint16_t cmdNumber,                     //读命令的数量，最多127
+                                uint8_t(*pReadCommand)[12],             //读命令列表
+                                uint16_t writedCoilNumber,              //可写线圈量节点的数量
+                                WritedCoilListNode *pCoilList,          //写线圈列表
+                                uint16_t writedRegisterNumber,         //可写寄存器量节点的数量
+                                WritedRegisterListNode *pRegisterList); //写寄存器列表
 
 
 
 /*初始化TCP客户端对象*/
 void InitializeTCPClientObject(TCPLocalClientType *client,      //要初始化的客户端对象
-                               uint16_t cmdNumber,              //读服务器命令的数量
-                               uint8_t (*pReadCommand)[12],     //读服务器命令列表
                                UpdateCoilStatusType pUpdateCoilStatus,
                                UpdateInputStatusType pUpdateInputStatus,
                                UpdateHoldingRegisterType pUpdateHoldingRegister,
