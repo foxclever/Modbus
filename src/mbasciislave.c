@@ -64,7 +64,7 @@ uint16_t ParsingAsciiMasterAccessCommand(uint8_t *receivedMessage, uint8_t *resp
   }
   
   /*校验接收到的数据是否正确*/
-  if (!CheckASCIIMessageIntegrity(hexMessage, length))
+  if (!CheckASCIIMessageIntegrity(hexMessage, length/2))
   {
     return 0;
   }
@@ -78,14 +78,14 @@ uint16_t ParsingAsciiMasterAccessCommand(uint8_t *receivedMessage, uint8_t *resp
   
   /*判断功能码是否有误*/
   FunctionCode fc = (FunctionCode)(*(hexMessage + 1));
-  if (CheckFunctionCode(fc) != MB_OK)
+  if (CheckFunctionCode(fc) != Modbus_OK)
   {
     return 0;
   }
   
   uint16_t startAddress = (uint16_t)(*(hexMessage + 2));
   startAddress = (startAddress << 8) + (uint16_t)(*(hexMessage + 3));
-  uint16_t quantity = (uint16_t)(*(receivedMessage + 4));
+  uint16_t quantity = (uint16_t)(*(hexMessage + 4));
   quantity = (quantity << 8) + (uint16_t)(*(hexMessage + 5));
   
   uint8_t index = (fc > 0x08) ? (fc - 0x09) : (fc - 0x01);

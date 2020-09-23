@@ -135,7 +135,7 @@ uint16_t GenerateMasterAccessRespond(uint8_t *receivedMessage,bool *statusList,u
 {
   uint16_t index=0;
   FunctionCode functionCode=(FunctionCode)(*(receivedMessage+1));
-  if(CheckFunctionCode(functionCode)!=MB_OK)
+  if(CheckFunctionCode(functionCode)!=Modbus_OK)
   {
     return 0;
   }
@@ -237,7 +237,7 @@ static uint16_t ConvertRegisterArrayToMBByteArray(uint16_t *sData,uint16_t lengt
 /*检查功能码是否正确*/
 ModbusStatus CheckFunctionCode(FunctionCode fc)
 {
-  ModbusStatus status=MB_OK;
+  ModbusStatus status=Modbus_OK;
   if((fc<ReadCoilStatus)||((fc>WriteSingleRegister)&&(fc<WriteMultipleCoil))||(fc>WriteMultipleRegister))
   {
     status=InvalidFunctionCode;

@@ -53,7 +53,7 @@ uint16_t ParsingMasterAccessCommand(uint8_t *receivedMessage, uint8_t *respondBy
   
   /*判断功能码是否有误*/
   FunctionCode fc = (FunctionCode)(*(receivedMessage + 1));
-  if (CheckFunctionCode(fc) != MB_OK)
+  if (CheckFunctionCode(fc) != Modbus_OK)
   {
     return 0;
   }

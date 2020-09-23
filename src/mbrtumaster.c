@@ -82,7 +82,7 @@ void ParsingSlaveRespondMessage(RTULocalMasterType *master,uint8_t *recievedMess
   
   /*判断功能码是否有误*/
   FunctionCode fuctionCode=(FunctionCode)recievedMessage[1];
-  if (CheckFunctionCode(fuctionCode) != MB_OK)
+  if (CheckFunctionCode(fuctionCode) != Modbus_OK)
   {
     return;
   }

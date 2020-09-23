@@ -96,7 +96,7 @@ void ParsingAsciiSlaveRespondMessage(AsciiLocalMasterType *master,uint8_t *recie
   
   /*判断功能码是否有误*/
   FunctionCode fuctionCode = (FunctionCode)hexMessage[1];
-  if (CheckFunctionCode(fuctionCode) != MB_OK)
+  if (CheckFunctionCode(fuctionCode) != Modbus_OK)
   {
     return;
   }
@@ -258,7 +258,7 @@ void InitializeASCIIMasterObject(AsciiLocalMasterType *master,uint16_t slaveNumb
                                  UpdateInputStatusType pUpdateInputStatus,
                                  UpdateHoldingRegisterType pUpdateHoldingRegister,
                                  UpdateInputResgisterType pUpdateInputResgister
-                                   )
+                                 )
 {
   master->slaveNumber=slaveNumber>255?255:slaveNumber;
   

@@ -50,7 +50,7 @@ uint16_t SyntheticReadWriteAsciiSlaveCommand(ObjAccessInfo slaveInfo, bool *stat
   
   uint8_t AsciiCommand[512];
   bool status = CovertHexMsgToAsciiMsg(command, AsciiCommand, bytesCount);
-  if (status != MB_OK)
+  if (status != Modbus_OK)
   {
     return 0;
   }
@@ -83,7 +83,7 @@ uint16_t SyntheticAsciiSlaveAccessRespond(uint8_t *receivedMessage, bool *status
   
   uint8_t AsciiCommand[512];
   bool status = CovertHexMsgToAsciiMsg(respond, AsciiCommand, length);
-  if (status != MB_OK)
+  if (status != Modbus_OK)
   {
     return 0;
   }
@@ -104,7 +104,7 @@ bool CovertAsciiMessageToHex(uint8_t *aMsg, uint8_t *hMsg, uint16_t aLen)
 {
   bool checkResult = CovertAsciiMsgToHexMsg(aMsg, hMsg, aLen);
   
-  if (checkResult == MB_OK)
+  if (checkResult == Modbus_OK)
   {
     return true;
   }
@@ -126,7 +126,7 @@ static ModbusStatus CovertHexMsgToAsciiMsg(uint8_t *hMsg, uint8_t *aMsg, uint16_
     aMsg[2 * i + 1] = HexToASCII(hMsg[i] & 0x0F);
   }
   
-  return MB_OK;
+  return Modbus_OK;
 }
 
 /*将ASCII消息列转为16进制消息列*/
@@ -151,7 +151,7 @@ static ModbusStatus CovertAsciiMsgToHexMsg(uint8_t *aMsg, uint8_t *hMsg, uint16_
     hMsg[i / 2] = (msb << 4) + lsb;
   }
   
-  return MB_OK;
+  return Modbus_OK;
 }
 
 /*将0到F的16进制数转化为ASCII码*/

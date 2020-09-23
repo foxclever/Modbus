@@ -45,7 +45,7 @@ uint16_t ParsingClientAccessCommand(uint8_t *receivedMessage,uint8_t *respondByt
 {
   uint16_t length=0;
   FunctionCode fc=(FunctionCode)(*(receivedMessage+7));
-  if(CheckFunctionCode(fc)!=MB_OK)
+  if(CheckFunctionCode(fc)!=Modbus_OK)
   {
     return 0;
   }

@@ -51,7 +51,7 @@ typedef enum {
 
 /*定义接收到指令检测错误时的错误码*/
 typedef enum{
-  MB_OK=0x00,
+  Modbus_OK=0x00,
   InvalidFunctionCode=0x01,     //不合法功能代码
   IllegalDataAddress=0x02,      //非法的数据地址
   IllegalDataValues=0x03,       //非法的数据值或者范围
